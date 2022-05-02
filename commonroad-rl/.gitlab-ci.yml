@@ -1,0 +1,132 @@
+image: localhost:5000/crrl-anaconda3
+
+stages:
+- prepare
+- test
+- build
+
+before_script:
+  - source activate cr36
+  - pip install -e .\[utils_ind,utils_highd,utils_run,tests\]
+  - pip install aenum
+  - which python
+
+
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+
+#test_setup:
+#  stage: test
+##   tags:
+##     - skynet
+#  script:
+#    # check code formatting
+#    - black --check commonroad_rl
+#    - black --check setup.py
+#    # check importing the built packages
+#    - python -c "import commonroad_dc.pycrcc as pycrcc"
+#    - python -c "import pycrccosy"
+#    - python -c "import commonroad_rl"
+#  cache:
+#    key: download-cache
+#    paths:
+#      - .cache/pip
+#      - install/*.zip
+#      - install/*.tar.gz
+
+
+unit_tests:
+  stage: test
+  script:
+    - coverage run --source=commonroad_rl/gym_commonroad -m pytest commonroad_rl/tests -m "not slow" --scope unit module -sv 
+    - coverage xml -o unit_test_coverage.xml
+    - coverage report -m || true
+  artifacts:
+    reports:
+      cobertura: unit_test_coverage.xml
+  cache:
+    key: download-cache
+
+
+convert_highd:
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      allow_failure: true
+      when: manual
+  script:
+    - rm -r commonroad_rl/tests/resources/test_gym_commonroad/pickles
+    - coverage run -m commonroad_rl.utils_highd.highd_to_cr -i commonroad_rl/tests/resources/test_gym_commonroad/raw/ -o commonroad_rl/tests/resources/test_gym_commonroad/xml_new/
+    - coverage run -m commonroad_rl.tools.validate_cr -s commonroad_rl/tools/XML_commonRoad_XSD_2020a.xsd commonroad_rl/tests/resources/test_gym_commonroad/xml_new/*
+    # - coverage run -m commonroad_rl.tools.pickle_scenario.xml_to_pickle -i commonroad_rl/tests/resources/test_gym_commonroad/xml -o commonroad_rl/tests/resources/test_gym_commonroad/pickles
+    # - coverage run -m pytest commonroad_rl/tests  -m "not slow" --scope unit module -sv
+    - coverage xml -o convert_highd_coverage.xml
+    - coverage report -m || true
+  artifacts:
+    reports:
+      cobertura: convert_highd_coverage.xml
+  cache:
+    key: download-cache
+
+
+convert_ind:
+  stage: test
+#   tags: 
+#     - skynet
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      allow_failure: true
+      when: manual
+  script:
+    - rm -r commonroad_rl/tests/resources/test_gym_commonroad/pickles
+    # install ind conversion dependencies
+    - bash scripts/install_ind_convert.sh
+    # run ind conversion
+    - cd commonroad_rl/utils_ind
+    - pip install -q -r requirements.txt
+    - bash convert_osm.sh
+    - coverage run -m commonroad_rl.utils_ind.ind_to_cr -t 0 9 20 32 -n 10 -o data_cr -i ../../install/data --multiprocessing 4
+    - coverage run -m commonroad_rl.tools.validate_cr data_cr/* -s ../tools/XML_commonRoad_XSD_2020a.xsd
+    - coverage run -m commonroad_rl.utils_ind.ind_to_cr -t 0 9 20 32 -n 10 -o ../tests/resources/test_gym_commonroad/pickles -i ../../install/data -p --multiprocessing 4
+    - cd ../..
+    # some final tests whether the environment works on the data as expected
+    - coverage run -m pytest commonroad_rl/tests  -m "not slow" --scope unit module
+    - coverage xml -o convert_ind_coverage.xml
+    - coverage report -m || true
+  artifacts:
+    reports:
+      cobertura: convert_ind_coverage.xml
+  cache:
+    key: download-cache
+
+
+integration_tests:
+  stage: test
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "development"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH'
+      allow_failure: true
+      when: manual
+  script:
+    - pytest commonroad_rl/tests/test_commonroad_rl.py -m "not slow" --scope integration -sv
+  cache:
+    key: download-cache
+  timeout: 3h
+
+long_tests:
+  stage: test
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH'
+      allow_failure: true
+      when: manual
+  script:
+    - pytest commonroad_rl/tests -m "slow" -sv
+  cache:
+    key: download-cache
+  timeout: 3h

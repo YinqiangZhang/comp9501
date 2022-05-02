@@ -1,0 +1,11 @@
+[report]
+exclude_lines =
+  pragma no cover
+  def __repr__
+
+[run]
+omit =
+  # omit everything from our conda environment
+  env/*
+  # omit the test suite itself
+  src/tests/*

@@ -1,0 +1,61 @@
+# Defualt configurations of hyper-parameters used in our project
+# During execution, these hyper-parameters are used in agent-environment interface, invariably safe braking sets,
+# conflict zones
+
+# configurations for different test mode
+general_configurations:
+    enable_safety_layer: True
+    acceleration_mode: 1
+    result_analysis: False
+    prediction_method: True
+    observe_intersection_related_states: True
+    ROOT_PATH: /home/yinqiang/master_thesis
+    meta_scenario_path: "/home/yinqiang/master_thesis/pickles/pickles_AAH_1/meta_scenario"
+    training_data_path: "/home/yinqiang/master_thesis/pickles/pickles_AAH_1/problem_train"
+    testing_data_path: "/home/yinqiang/master_thesis/pickles/pickles_AAH_1/problem_test"
+    debug_data_path: "/home/yinqiang/master_thesis/pickles/pickles_AAH_1/problem_debug"
+    visualization: "./img"
+
+# configurations of agent-environment interface
+agent_environment_interface:
+    lane_action_num: 3
+    direction_action_num: 3
+    acceleration_action_num: 7 
+    state_space_dimension: 40
+    lat_offset_rewards: 40.0
+    lon_offset_rewards: 20.0
+    fail_sampling_rewards: -10.0
+    emergency_braking: -5.0
+    stop_rewards: -0.1
+    intersection_rewards: -0.1
+    rear_collision: -0.1
+
+
+# reference manager  
+reference_manager:
+    smooth_factor: 1.2
+    weight_coefficient: 12
+
+# reactive planner
+low_level_planner:
+    replan_horizon: 10
+    max_orientation_diff: 0.2
+    reference_lane_threshold: 1.0
+    accleration_action_set: [-4.0, -2.0, -1.0, 0.0, 1.0, 2.0, 4.0]
+    predicted_state_steps: [5, 15, 30, 60, 90]
+    lateral_distance_offset: 1.0
+    planning_time_horizon: 4.0
+    lane_change_avaliable_distance: 20
+    velocity_mode_threshold: 1.0
+
+# SPOT and ISS
+occupany_predictor:
+    maximal_acceleration: 8.0
+    maximal_lateral_accleration: 4.0
+    maximal_velocity: 20.0
+    reacting_time: 0.3
+    compute_occ_m1: True
+    compute_occ_m2: True
+    compute_occ_m3: True
+    prediction_time_horizon: 15
+

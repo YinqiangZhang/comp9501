@@ -1,0 +1,21 @@
+name: cr36
+
+dependencies:
+  - python=3.6
+  - tensorflow=1.15.0
+  - scipy
+  - numpy
+  - pip=20.2.4
+  - pip:
+      # environment dependencies
+      - aenum
+      - networkx
+      - triangle
+      - Polygon3
+      - pybind11
+      - setuptools==50.3.2
+      # learning dependencies
+      - gym
+      - stable_baselines
+      # CommonRoad packages
+      - commonroad-vehicle-models
